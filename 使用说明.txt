@@ -1,0 +1,63 @@
+三国2剧本配置文件压缩工具
+
+说明
+本工具用于将多个时期的 TimesX.ini 压缩成 TimesAll.ini 文件，或是利用 TimesAll.ini 文件输出为多个 TimesX.ini 文件。
+在原版下，五个时期的TimesX.ini的大部分内容是等同的，例如武将属性、技能，城市位置，路径设置等。一旦mod作者需要修改内容，
+往往需要同时修改五处；一些EXE支持十个剧本，则需要同时修改十处，深受其害。因此我制作了这个小工具。
+
+
+【使用方法】
+将LoadTimes.exe复制到Times1-5.ini所在文件夹下，运行LoadTimes.exe即可得到TimesAll.ini。
+编辑完成TimesAll.ini后，运行ExportTimes.exe，即可得到Times1-5.ini。
+
+两个文件运行后均需要输入时期数。当您看到
+Enter Total Number of Times (5 by default):
+时，输入您需要的时期数。默认为五个时期，输入5即可。
+
+
+【！重要！】编辑须知：TimesAll.ini文件格式
+INI文件分为多个“节”；一节由[SYSTEM], [KINGXX], [CITYXX], [PATHXXX]和[GENERAL]开头，到下一个方括号行截止。
+规则：
+
+a) 如果某个时期的某节和其他时期均相同，则只需要输入一次。
+
+b) 如果某个时期的某节和其他时期大部分相同，但部分行不同；
+则应在默认行之后，手动输入新的行，并以英文小括号开头，括号内为时期。如：
+BASEEXP=200		; 这一行为默认行
+(3)BASEEXP=800		; 以下为特殊行
+(4)BASEEXP=2000
+(5)BASEEXP=3800
+表示对于该武将，在第3时期BASEEXP=800，在第4时期BASEEXP=2000，在第5时期BASEEXP=3800。
+在其余时期BASEEXP=200 （不带括号的是默认值。）
+
+注意：带括号的行，必须在默认行的后面（但可以不紧跟）；
+如果默认行有多行具有相同属性（例如SKILL和WISESKILL），
+则必须先输入所有默认行的SKILL/WISESKILL，再按时期顺序输入各个特殊行。
+
+c) 如果某节只在一些时期有（即不是所有时期都有），
+则必须为每个时期重复一次节内容，节头开始必须带有括号，以指定该节对应的时期。
+例如：
+(1)[KING07]
+NAME=劉焉
+FLAGNUM=3
+SELECT=9
+TYPE=2
+(2)[KING07]
+NAME=公孫瓚
+FLAGNUM=06
+SELECT=7
+TYPE=2
+(3)[KING07]
+NAME=劉璋
+FLAGNUM=3
+SELECT=9
+TYPE=3
+(4)[KING07]
+NAME=張魯
+FLAGNUM=9
+SELECT=9
+TYPE=3
+分别为第1-4时期指定了第七位君主。由于第五时期不存在第七位君主，因此需要将KING07手动输入4次。
+
+
+
