@@ -14,38 +14,43 @@
 using std::cin;
 using std::endl;
 using std::vector;
-using std::string;
-using std::wstring;
+
+typedef std::string     string;
+typedef std::ifstream   ifstream;
+typedef std::ofstream   ofstream;
+typedef std::regex      regex;
+typedef std::sregex_token_iterator 
+                        sregex_token_iterator;
 
 // trim from start (in place)
-static inline void ltrim(wstring &s) {
+static inline void ltrim(string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
             std::not1(std::ptr_fun<int, int>(std::isspace))));
 }
 
 // trim from end (in place)
-static inline void rtrim(wstring &s) {
+static inline void rtrim(string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(),
             std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
 }
 
 // trim from both ends (in place)
-static inline void trim(wstring &s) {
+static inline void trim(string &s) {
     ltrim(s);
     rtrim(s);
 }
 
 
 struct Attrib {
-    wstring name;
-    wstring value;
-    wstring values[20];
+    string name;
+    string value;
+    string values[20];
     int valuesMapping = 0;
 };
 
 struct Section {
-    wstring title = L"";
-    wstring id = L"";
+    string title = "";
+    string id = "";
     vector<Attrib> lines;
     int existingTimes;
 
@@ -54,9 +59,9 @@ struct Section {
 
 vector<Section> sections;
 
-wstring line;
+string line;
 
-bool readline(std::wifstream& input) {
+bool readline(ifstream& input) {
     if (std::getline(input, line)) {
         for (int i = 0; i < line.size(); i++) {
             if (line[i] == ';'){
@@ -69,28 +74,28 @@ bool readline(std::wifstream& input) {
     return false;
 }
 
-wstring LoadSectionHead() {
+string LoadSectionHead() {
     size_t begin = line.find('[') + 1;
     size_t end = line.find(']');
     return line.substr(begin, end - begin);
 }
 
-std::pair<wstring, wstring> LoadAttrib() {
+std::pair<string, string> LoadAttrib() {
     size_t equal = line.find('=');
     return std::make_pair(line.substr(0, equal), line.substr(equal + 1, line.size()));
 }
 
-vector<wstring> split(wstring s, wstring delim) {
-    std::wregex re(delim);
-    return vector<wstring> {
-        std::wsregex_token_iterator(s.begin(), s.end(), re, -1),
-        std::wsregex_token_iterator()
+vector<string> split(string s, string delim) {
+    regex re(delim);
+    return vector<string> {
+        sregex_token_iterator(s.begin(), s.end(), re, -1),
+        sregex_token_iterator()
     };
 }
 
-bool CheckAttrib(wstring left, wstring right) {
-    auto lsplit = split(left, L"(\\s+|,)");
-    auto rsplit = split(right, L"(\\s+|,)");
+bool CheckAttrib(string left, string right) {
+    auto lsplit = split(left, "(\\s+|,)");
+    auto rsplit = split(right, "(\\s+|,)");
     if (lsplit.size() && lsplit.size() != rsplit.size())
         return false;
     for (int i = 0; i < lsplit.size(); i++) {
@@ -145,12 +150,12 @@ void endOfSection(Section*& section, int times) {
     section = new Section;
 }
 
-void LoadTimes(std::wifstream& input, int times) {
+void LoadTimes(ifstream& input, int times) {
     Section* section = new Section;
     bool firstSection = true;
     while(readline(input)) {
         
-        //std::cout << "linein:\t" << wstring(line) << std::endl;
+        //std::cout << "linein:\t" << string(line) << std::endl;
 
         // New Section
         if (line[0] == '[') {
@@ -166,19 +171,19 @@ void LoadTimes(std::wifstream& input, int times) {
         // Add to existing section
         } else {
             auto pair = LoadAttrib();
-            wstring name = pair.first;
-            wstring value = pair.second;
+            string name = pair.first;
+            string value = pair.second;
             //std::cout << "parsed:\t" << name << ", " << value << std::endl;
 
             for (auto & c: name) c = toupper(c);
 
-            if (section->title == L"GENERAL" && name == L"SEQUENCE") 
+            if (section->title == "GENERAL" && name == "SEQUENCE") 
                 section->id = value;
             
             bool linefound = false;
             for (Attrib & rline : section->lines) {
                 if (rline.name == name) {
-                    rline.value += L"\n";
+                    rline.value += "\n";
                     rline.value += value;
                     linefound = true;
                 }
@@ -197,26 +202,26 @@ void LoadTimes(std::wifstream& input, int times) {
     delete section;
 }
 
-void outputRows(std::wofstream& fout, int times, wstring name, wstring value) {
+void outputRows(ofstream& fout, int times, string name, string value) {
     trim(name);
     trim(value);
-    if (name == L"") return;
+    if (name == "") return;
     
-    auto linesplit = split(value, L"[\r\n]");
+    auto linesplit = split(value, "[\r\n]");
     for (int i = 0; i < linesplit.size(); i++) {
         if (times == 0)
-            fout << name << L"=" << linesplit[i] << std::endl;
+            fout << name << "=" << linesplit[i] << std::endl;
         else
-            fout << L"(" << times << L")" << name << L"=" << linesplit[i] << std::endl;
+            fout << "(" << times << ")" << name << "=" << linesplit[i] << std::endl;
     }
 }
 
 
 int getSectionOrder(const Section& l) {
-    if (l.title == L"SYSTEM") return 0;
-    if (l.title.substr(0, 4) == L"KING") return 1;
-    if (l.title.substr(0, 4) == L"CITY") return 2;
-    if (l.title.substr(0, 4) == L"PATH") return 3;
+    if (l.title == "SYSTEM") return 0;
+    if (l.title.substr(0, 4) == "KING") return 1;
+    if (l.title.substr(0, 4) == "CITY") return 2;
+    if (l.title.substr(0, 4) == "PATH") return 3;
     return 4;
 };
 
@@ -250,19 +255,19 @@ int main () {
     for (int i = 1; i <= times; i++) {
         char filename[20];
         sprintf(filename, "Times%d.ini", i);
-        std::wifstream fin(filename);
+        ifstream fin(filename);
         LoadTimes(fin, i);
         fin.close();
     }
 
     std::sort(sections.begin(), sections.end(), compareSection);
 
-    std::wofstream fout ("TimesAll.ini");
+    ofstream fout ("TimesAll.ini");
     for (Section & section : sections) {
         if (section.existingTimes != (1 << times) - 1) {
             for (int i = 1; i <= times; i++) {
                 if (section.existingTimes & (1 << (i - 1))) {
-                    fout << L"(" << i << L")[" << section.title << L"]" << std::endl;
+                    fout << "(" << i << ")[" << section.title << "]" << std::endl;
                     for (Attrib & row : section.lines) {
                         if (!(row.valuesMapping & (1 << (i - 1)))) {
                             outputRows(fout, 0, row.name, row.value);
@@ -274,7 +279,7 @@ int main () {
             }
 
         } else {
-            fout << L"[" <<section.title << L"]" << std::endl;
+            fout << "[" <<section.title << "]" << std::endl;
             for (Attrib & row : section.lines) {
                 outputRows(fout, 0, row.name, row.value);
                 for (int i = 1; i <= times; i++) {

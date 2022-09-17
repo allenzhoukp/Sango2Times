@@ -7,33 +7,40 @@
 #include <cctype>
 #include <locale>
 
-using std::wstring;
 using std::vector;
 
+typedef std::string     string;
+typedef std::ifstream   ifstream;
+typedef std::ofstream   ofstream;
+typedef std::regex      regex;
+typedef std::smatch     smatch;
+typedef std::sregex_token_iterator 
+                        sregex_token_iterator;
+
 // trim from start (in place)
-static inline void ltrim(wstring &s) {
+static inline void ltrim(string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
             std::not1(std::ptr_fun<int, int>(std::isspace))));
 }
 
 // trim from end (in place)
-static inline void rtrim(wstring &s) {
+static inline void rtrim(string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(),
             std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
 }
 
 // trim from both ends (in place)
-static inline void trim(wstring &s) {
+static inline void trim(string &s) {
     ltrim(s);
     rtrim(s);
 }
 
 // split
-vector<wstring> split(wstring s, wstring delim) {
-    std::wregex re(delim);
-    return vector<wstring> {
-        std::wsregex_token_iterator(s.begin(), s.end(), re, -1),
-        std::wsregex_token_iterator()
+vector<string> split(string s, string delim) {
+    regex re(delim);
+    return vector<string> {
+        sregex_token_iterator(s.begin(), s.end(), re, -1),
+        sregex_token_iterator()
     };
 }
 
@@ -41,22 +48,22 @@ vector<wstring> split(wstring s, wstring delim) {
 
 
 struct Attrib {
-    wstring name;
-    wstring value;
+    string name;
+    string value;
     int defaultTimes;
-    wstring values[20];
+    string values[20];
 };
 
-bool isSectionStart(wstring line) {
-    return line[0] == L'[';
+bool isSectionStart(string line) {
+    return line[0] == '[';
 }
 
-std::pair<wstring, wstring> LoadAttrib(wstring& line) {
+std::pair<string, string> LoadAttrib(string& line) {
     size_t equal = line.find('=');
     return std::make_pair(line.substr(0, equal), line.substr(equal + 1, line.size()));
 }
 
-void outputByBitset(vector<std::wofstream>& fout, wstring str, int times){
+void outputByBitset(vector<ofstream>& fout, string str, int times){
     for (int i = 0; i < 20; i++) {
         if (times & (1 << i)) {
             fout[i] << str << std::endl;
@@ -64,9 +71,9 @@ void outputByBitset(vector<std::wofstream>& fout, wstring str, int times){
     }
 }
 
-void outputAttrib(std::wofstream& output, wstring name, wstring value) {
-    for (auto s : split(value, L"\\n")) 
-        output << name << L"=" << s << std::endl;
+void outputAttrib(ofstream& output, string name, string value) {
+    for (auto s : split(value, "\\n")) 
+        output << name << "=" << s << std::endl;
 }
 
 int main () {
@@ -89,12 +96,12 @@ int main () {
 
     // ==========================
 
-    std::wifstream fin ("TimesAll.ini");
+    ifstream fin ("TimesAll.ini");
 
-    vector<std::wofstream> fout;
+    vector<ofstream> fout;
     for (int i = 0; i < times; i++) {
         sprintf(filename, "Times%d.ini", i + 1);
-        std::wofstream fx (filename, std::ofstream::out | std::ofstream::trunc);
+        ofstream fx (filename, std::ofstream::out | std::ofstream::trunc);
         fout.push_back(std::move(fx));
     }
 
@@ -106,11 +113,11 @@ int main () {
     //  the specified attrib (applies to a given times)
     //  the default attrib (applies to every times apart from the specified times)
 
-    wstring line;
+    string line;
     int sectionTimes;
 
-    std::wregex re (L"^\\((\\d+(?:,\\d+)*\\))(.*)$");
-    std::wsmatch m;
+    regex re ("^\\((\\d+(?:,\\d+)*\\))(.*)$");
+    smatch m;
 
     vector<Attrib> attribs;
     
@@ -119,8 +126,8 @@ int main () {
         int rowTimes = 0;
 
         if (std::regex_search(line, m, re)) {
-            auto splittedTimes = split(m[1], L",");
-            for (wstring & s : splittedTimes) {
+            auto splittedTimes = split(m[1], ",");
+            for (string & s : splittedTimes) {
                 trim(s);
                 rowTimes |= (1 << (std::stoi(s) - 1));
             }
@@ -157,8 +164,8 @@ int main () {
         // It is an attrib
         } else {
             auto pair = LoadAttrib(line);
-            wstring name = pair.first;
-            wstring value = pair.second;
+            string name = pair.first;
+            string value = pair.second;
 
             // Default Section
             if (sectionTimes == (1 << times) - 1) {
@@ -167,7 +174,7 @@ int main () {
                 if (rowTimes == 0) {
                     // Same as Last Row
                     if (attribs.size() > 0 && attribs[attribs.size() - 1].name == name) {
-                        attribs[attribs.size() - 1].value += L"\n";
+                        attribs[attribs.size() - 1].value += "\n";
                         attribs[attribs.size() - 1].value += value;
                     } else {
                         Attrib neuer;
@@ -188,8 +195,8 @@ int main () {
                             // Append Value
                             for (int i = 0; i < times; i++) {
                                 if (rowTimes & (1 << i)) {
-                                    if (a.values[i] != L"")
-                                        a.values[i] += L"\n";
+                                    if (a.values[i] != "")
+                                        a.values[i] += "\n";
                                     a.values[i] += value;
                                 }
                             }
